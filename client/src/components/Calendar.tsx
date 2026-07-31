@@ -19,6 +19,16 @@ type Props = {
   onBookingClick: (booking: Booking) => void;
 };
 
+function slotFrameClasses(slot: string, index: number, slotCount: number) {
+  const startsHour = slot.endsWith(":00");
+  const endsHour = slot.endsWith(":45");
+  const isLastSlot = index === slotCount - 1;
+  return [
+    startsHour ? "border-t-2 border-t-slate-400" : "",
+    endsHour || isLastSlot ? "border-b-2 border-b-slate-400" : "border-b border-b-slate-200"
+  ].join(" ");
+}
+
 export function Calendar({ staff, services, bookings, search, onEmptyCellClick, onBookingClick }: Props) {
   const slots = timeSlots();
   const serviceMap = new Map(services.map((service) => [service._id, service]));
@@ -54,10 +64,12 @@ export function Calendar({ staff, services, bookings, search, onEmptyCellClick, 
         ))}
 
         <div className="sticky left-0 z-10 border-r border-salon-line bg-white">
-          {slots.map((slot) => (
+          {slots.map((slot, index) => (
             <div
               key={slot}
-              className={`h-10 border-b px-2 pt-1 text-right text-xs ${slot.endsWith(":00") ? "border-slate-400 font-semibold text-slate-600" : "border-slate-200 text-slate-400"}`}
+              className={`h-10 px-2 pt-1 text-right text-xs ${slotFrameClasses(slot, index, slots.length)} ${
+                slot.endsWith(":00") ? "bg-slate-50 font-semibold text-slate-700" : "text-slate-400"
+              }`}
             >
               {slot}
             </div>
@@ -74,12 +86,16 @@ export function Calendar({ staff, services, bookings, search, onEmptyCellClick, 
               style={{ height: slots.length * ROW_HEIGHT }}
             >
               <div className="grid" style={{ gridTemplateRows: `repeat(${slots.length}, ${ROW_HEIGHT}px)` }}>
-                {slots.map((slot) => (
+                {slots.map((slot, index) => (
                   <button
                     key={`${member._id}-${slot}`}
                     type="button"
                     onClick={() => onEmptyCellClick(member._id, slot)}
-                    className="h-10 border-b border-slate-200 text-left hover:bg-teal-50/80 focus:z-10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-600 active:bg-teal-100"
+                    className={`h-10 text-left hover:bg-teal-50/80 focus:z-10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-600 active:bg-teal-100 ${slotFrameClasses(
+                      slot,
+                      index,
+                      slots.length
+                    )}`}
                     aria-label={`Create booking with ${member.name} at ${slot}`}
                   />
                 ))}
