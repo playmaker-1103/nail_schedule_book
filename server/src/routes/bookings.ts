@@ -1,16 +1,18 @@
 import { Router } from "express";
 import { HttpError } from "../errors.js";
-import { Booking } from "../models/booking.js";
-import { Service } from "../models/service.js";
-import { Staff } from "../models/staff.js";
+import type { DiaryRepository } from "../repository/types.js";
 import { bookingCreateSchema, bookingPatchSchema, dateQuerySchema, idParamSchema } from "../validation.js";
 
 export const bookingsRouter = Router();
 
-async function assertReferences(payload: { staffId?: string; serviceId?: string }) {
+function repo(req: Parameters<Parameters<typeof bookingsRouter.get>[1]>[0]) {
+  return req.app.locals.repository as DiaryRepository;
+}
+
+async function assertReferences(repository: DiaryRepository, payload: { staffId?: string; serviceId?: string }) {
   const [staff, service] = await Promise.all([
-    payload.staffId ? Staff.exists({ _id: payload.staffId }) : Promise.resolve(true),
-    payload.serviceId ? Service.exists({ _id: payload.serviceId }) : Promise.resolve(true)
+    payload.staffId ? repository.staffExists(payload.staffId) : Promise.resolve(true),
+    payload.serviceId ? repository.serviceExists(payload.serviceId) : Promise.resolve(true)
   ]);
   if (!staff) throw new HttpError(400, "Selected staff member does not exist");
   if (!service) throw new HttpError(400, "Selected service does not exist");
@@ -19,8 +21,7 @@ async function assertReferences(payload: { staffId?: string; serviceId?: string 
 bookingsRouter.get("/", async (req, res, next) => {
   try {
     const { date } = dateQuerySchema.parse(req.query);
-    const bookings = await Booking.find({ date }).sort({ staffId: 1, startTime: 1, createdAt: 1 });
-    res.json(bookings);
+    res.json(await repo(req).listBookings(date));
   } catch (error) {
     next(error);
   }
@@ -29,8 +30,16 @@ bookingsRouter.get("/", async (req, res, next) => {
 bookingsRouter.post("/", async (req, res, next) => {
   try {
     const payload = bookingCreateSchema.parse(req.body);
-    await assertReferences(payload);
-    const booking = await Booking.create(payload);
+    await assertReferences(repo(req), payload);
+    const booking = await repo(req).createBooking({
+      customerName: payload.customerName,
+      serviceId: payload.serviceId,
+      staffId: payload.staffId,
+      date: payload.date,
+      startTime: payload.startTime,
+      durationMinutes: payload.durationMinutes,
+      note: payload.note
+    });
     res.status(201).json(booking);
   } catch (error) {
     next(error);
@@ -41,8 +50,8 @@ bookingsRouter.patch("/:id", async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params);
     const payload = bookingPatchSchema.parse(req.body);
-    await assertReferences(payload);
-    const booking = await Booking.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+    await assertReferences(repo(req), payload);
+    const booking = await repo(req).updateBooking(id, payload);
     if (!booking) throw new HttpError(404, "Booking not found");
     res.json(booking);
   } catch (error) {
@@ -53,8 +62,8 @@ bookingsRouter.patch("/:id", async (req, res, next) => {
 bookingsRouter.delete("/:id", async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params);
-    const booking = await Booking.findByIdAndDelete(id);
-    if (!booking) throw new HttpError(404, "Booking not found");
+    const deleted = await repo(req).deleteBooking(id);
+    if (!deleted) throw new HttpError(404, "Booking not found");
     res.status(204).send();
   } catch (error) {
     next(error);

@@ -7,7 +7,7 @@ import type { Booking, Service, Staff } from "./types";
 
 const staff: Staff[] = [
   {
-    _id: "64a000000000000000000001",
+    _id: "11111111-1111-4111-8111-111111111111",
     name: "Tan",
     colour: "#0f766e",
     displayOrder: 0,
@@ -19,7 +19,7 @@ const staff: Staff[] = [
 
 const services: Service[] = [
   {
-    _id: "64a000000000000000000101",
+    _id: "22222222-2222-4222-8222-222222222222",
     name: "BIAB Refill",
     defaultDuration: 45,
     colour: "#d9f99d",
@@ -40,7 +40,7 @@ beforeEach(() => {
     if (url.includes("/staff")) return json(staff);
     if (url.includes("/services")) return json(services);
     if (url.includes("/bookings") && init?.method === "POST") {
-      const created = { _id: "64a000000000000000000201", createdAt: "", updatedAt: "", ...JSON.parse(String(init.body)) };
+      const created = { _id: "33333333-3333-4333-8333-333333333333", createdAt: "", updatedAt: "", ...JSON.parse(String(init.body)) };
       bookings.push(created);
       return json(created, 201);
     }

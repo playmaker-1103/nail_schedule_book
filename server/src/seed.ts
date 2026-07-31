@@ -1,8 +1,5 @@
 import { format } from "date-fns";
-import { connectDb, disconnectDb } from "./db.js";
-import { Booking } from "./models/booking.js";
-import { Service } from "./models/service.js";
-import { Staff } from "./models/staff.js";
+import { createSupabaseRepository } from "./repository/supabase.js";
 
 const staffSeed = [
   ["Tan", "#0f766e"],
@@ -27,77 +24,103 @@ const serviceSeed = [
 ] as const;
 
 async function seed() {
-  await connectDb();
-  await Promise.all([Booking.deleteMany({}), Staff.deleteMany({}), Service.deleteMany({})]);
+  const repository = createSupabaseRepository();
+  const existingStaff = await repository.listStaff();
+  const existingServices = await repository.listServices();
 
-  const staff = await Staff.insertMany(
-    staffSeed.map(([name, colour], displayOrder) => ({ name, colour, displayOrder, active: true }))
-  );
-  const services = await Service.insertMany(
-    serviceSeed.map(([name, defaultDuration, colour], displayOrder) => ({
-      name,
-      defaultDuration,
-      colour,
-      displayOrder,
-      active: true
-    }))
-  );
+  const staffByName = new Map(existingStaff.map((member) => [member.name, member]));
+  const serviceByName = new Map(existingServices.map((service) => [service.name, service]));
+
+  const staff = [];
+  for (const [name, colour] of staffSeed) {
+    const existing = staffByName.get(name);
+    staff.push(
+      existing ??
+        (await repository.createStaff({
+          name,
+          colour,
+          displayOrder: staff.length,
+          active: true
+        }))
+    );
+  }
+
+  const services = [];
+  for (const [name, defaultDuration, colour] of serviceSeed) {
+    const existing = serviceByName.get(name);
+    services.push(
+      existing ??
+        (await repository.createService({
+          name,
+          defaultDuration,
+          colour,
+          displayOrder: services.length,
+          active: true
+        }))
+    );
+  }
 
   const today = format(new Date(), "yyyy-MM-dd");
-  const byStaff = Object.fromEntries(staff.map((member) => [member.name, member._id]));
-  const byService = Object.fromEntries(services.map((service) => [service.name, service._id]));
+  const todayBookings = await repository.listBookings(today);
+  const alreadySeeded = todayBookings.some((booking) => booking.customerName === "Maya" && booking.date === today);
 
-  await Booking.insertMany([
-    {
-      customerName: "Maya",
-      staffId: byStaff.Tan,
-      serviceId: byService["BIAB Refill"],
-      date: today,
-      startTime: "09:00",
-      durationMinutes: 45,
-      note: "Prefers short almond"
-    },
-    {
-      customerName: "Sarah",
-      staffId: byStaff.Lee,
-      serviceId: byService["Shellac Hands"],
-      date: today,
-      startTime: "09:30",
-      durationMinutes: 30
-    },
-    {
-      customerName: "Aoife",
-      staffId: byStaff.Tony,
-      serviceId: byService["Acrylic Full Set"],
-      date: today,
-      startTime: "11:00",
-      durationMinutes: 75
-    },
-    {
-      customerName: "Nina",
-      staffId: byStaff.Emily,
-      serviceId: byService.Pedicure,
-      date: today,
-      startTime: "13:15",
-      durationMinutes: 45
-    },
-    {
-      customerName: "Grace",
-      staffId: byStaff.Tan,
-      serviceId: byService["Nail Art"],
-      date: today,
-      startTime: "09:15",
-      durationMinutes: 30,
-      note: "Chrome finish"
-    }
-  ]);
+  if (!alreadySeeded) {
+    const byStaff = Object.fromEntries(staff.map((member) => [member.name, member._id]));
+    const byService = Object.fromEntries(services.map((service) => [service.name, service._id]));
 
-  console.log(`Seeded ${staff.length} staff, ${services.length} services, and example bookings for ${today}.`);
-  await disconnectDb();
+    await Promise.all([
+      repository.createBooking({
+        customerName: "Maya",
+        staffId: byStaff.Tan,
+        serviceId: byService["BIAB Refill"],
+        date: today,
+        startTime: "09:00",
+        durationMinutes: 45,
+        note: "Prefers short almond"
+      }),
+      repository.createBooking({
+        customerName: "Sarah",
+        staffId: byStaff.Lee,
+        serviceId: byService["Shellac Hands"],
+        date: today,
+        startTime: "09:30",
+        durationMinutes: 30,
+        note: ""
+      }),
+      repository.createBooking({
+        customerName: "Aoife",
+        staffId: byStaff.Tony,
+        serviceId: byService["Acrylic Full Set"],
+        date: today,
+        startTime: "11:00",
+        durationMinutes: 75,
+        note: ""
+      }),
+      repository.createBooking({
+        customerName: "Nina",
+        staffId: byStaff.Emily,
+        serviceId: byService.Pedicure,
+        date: today,
+        startTime: "13:15",
+        durationMinutes: 45,
+        note: ""
+      }),
+      repository.createBooking({
+        customerName: "Grace",
+        staffId: byStaff.Tan,
+        serviceId: byService["Nail Art"],
+        date: today,
+        startTime: "09:15",
+        durationMinutes: 30,
+        note: "Chrome finish"
+      })
+    ]);
+  }
+
+  console.log(`Seeded Supabase staff, services, and example bookings for ${today}.`);
 }
 
-seed().catch(async (error) => {
+seed().catch((error) => {
   console.error(error);
-  await disconnectDb();
   process.exit(1);
 });

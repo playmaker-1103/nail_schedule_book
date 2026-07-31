@@ -1,32 +1,18 @@
 import request from "supertest";
-import { MongoMemoryServer } from "mongodb-memory-server";
-import mongoose from "mongoose";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
-import { Booking } from "./models/booking.js";
-import { Service } from "./models/service.js";
-import { Staff } from "./models/staff.js";
+import { MemoryRepository } from "./repository/memory.js";
 
-const app = createApp();
-let mongo: MongoMemoryServer;
+const repository = new MemoryRepository();
+const app = createApp(repository);
 
-beforeAll(async () => {
-  mongo = await MongoMemoryServer.create();
-  await mongoose.connect(mongo.getUri());
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongo.stop();
-});
-
-beforeEach(async () => {
-  await Promise.all([Booking.deleteMany({}), Staff.deleteMany({}), Service.deleteMany({})]);
+beforeEach(() => {
+  repository.reset();
 });
 
 async function fixtures() {
-  const staff = await Staff.create({ name: "Tan", colour: "#0f766e", displayOrder: 0, active: true });
-  const service = await Service.create({
+  const staff = await repository.createStaff({ name: "Tan", colour: "#0f766e", displayOrder: 0, active: true });
+  const service = await repository.createService({
     name: "BIAB Refill",
     defaultDuration: 45,
     colour: "#d9f99d",
@@ -42,22 +28,6 @@ describe("booking API", () => {
 
     const response = await request(app).post("/api/bookings").send({
       customerName: "Maya",
-      staffId: staff._id.toString(),
-      serviceId: service._id.toString(),
-      date: "2026-07-31",
-      startTime: "09:00",
-      durationMinutes: 45
-    });
-
-    expect(response.status).toBe(201);
-    expect(response.body.customerName).toBe("Maya");
-    expect(await Booking.countDocuments()).toBe(1);
-  });
-
-  it("edits a booking", async () => {
-    const { staff, service } = await fixtures();
-    const booking = await Booking.create({
-      customerName: "Maya",
       staffId: staff._id,
       serviceId: service._id,
       date: "2026-07-31",
@@ -65,7 +35,24 @@ describe("booking API", () => {
       durationMinutes: 45
     });
 
-    const response = await request(app).patch(`/api/bookings/${booking._id.toString()}`).send({
+    expect(response.status).toBe(201);
+    expect(response.body.customerName).toBe("Maya");
+    expect(repository.bookings).toHaveLength(1);
+  });
+
+  it("edits a booking", async () => {
+    const { staff, service } = await fixtures();
+    const booking = await repository.createBooking({
+      customerName: "Maya",
+      staffId: staff._id,
+      serviceId: service._id,
+      date: "2026-07-31",
+      startTime: "09:00",
+      durationMinutes: 45,
+      note: ""
+    });
+
+    const response = await request(app).patch(`/api/bookings/${booking._id}`).send({
       customerName: "Maya N",
       startTime: "10:15",
       durationMinutes: 60
@@ -78,19 +65,20 @@ describe("booking API", () => {
 
   it("deletes a booking", async () => {
     const { staff, service } = await fixtures();
-    const booking = await Booking.create({
+    const booking = await repository.createBooking({
       customerName: "Maya",
       staffId: staff._id,
       serviceId: service._id,
       date: "2026-07-31",
       startTime: "09:00",
-      durationMinutes: 45
+      durationMinutes: 45,
+      note: ""
     });
 
-    const response = await request(app).delete(`/api/bookings/${booking._id.toString()}`);
+    const response = await request(app).delete(`/api/bookings/${booking._id}`);
 
     expect(response.status).toBe(204);
-    expect(await Booking.countDocuments()).toBe(0);
+    expect(repository.bookings).toHaveLength(0);
   });
 
   it("returns validation errors for invalid bookings", async () => {

@@ -4,6 +4,7 @@ dotenv.config();
 
 export const config = {
   port: Number(process.env.PORT ?? 4000),
-  mongoUri: process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017/nail-salon-diary",
+  supabaseUrl: process.env.SUPABASE_URL ?? "",
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173"
 };

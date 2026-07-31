@@ -6,7 +6,7 @@ A private daily appointment diary for one nail salon. It replaces a paper appoin
 
 - React, TypeScript, Vite, Tailwind CSS
 - React Query for server state
-- Node.js, Express, MongoDB, Mongoose
+- Node.js, Express, Supabase/Postgres
 - REST API, Zod validation, date-fns
 - Vitest, React Testing Library, Supertest
 
@@ -18,7 +18,17 @@ cp server/.env.example server/.env
 cp client/.env.example client/.env
 ```
 
-Edit `server/.env` with your MongoDB connection string.
+Create a Supabase project, then run the SQL in `supabase/schema.sql` in the Supabase SQL Editor.
+
+Edit `server/.env`:
+
+```env
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+CLIENT_ORIGIN=http://localhost:5173
+```
+
+Use the service role key only on the server. Do not expose it in the browser.
 
 ## Seed Data
 
@@ -55,11 +65,13 @@ npm test
 
 ## Deploy To Vercel
 
-Use a MongoDB Atlas or other cloud MongoDB URI for production. A local MongoDB URI such as `mongodb://127.0.0.1:27017/...` will not be reachable from Vercel.
+Create the tables first by running `supabase/schema.sql` in Supabase.
 
-Required Vercel environment variable:
+Required Vercel environment variables:
 
-- `MONGODB_URI`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `CLIENT_ORIGIN`
 
 Deploy:
 
@@ -80,7 +92,8 @@ npm start --workspace server
 Server:
 
 - `PORT` - Express port, defaults to `4000`
-- `MONGODB_URI` - MongoDB connection string
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase server-only service role key
 - `CLIENT_ORIGIN` - allowed browser origin, defaults to `http://localhost:5173`
 
 Client:

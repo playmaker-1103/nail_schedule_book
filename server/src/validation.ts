@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Must be a valid MongoDB id");
+const uuid = z.string().uuid("Must be a valid UUID");
 const colour = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a hex colour such as #0f766e");
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use yyyy-MM-dd");
 const timeString = z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Use HH:mm");
@@ -31,8 +31,8 @@ export const servicePatchSchema = serviceCreateSchema.partial().refine((value) =
 
 export const bookingCreateSchema = z.object({
   customerName: z.string().trim().min(1).max(120),
-  serviceId: objectId,
-  staffId: objectId,
+  serviceId: uuid,
+  staffId: uuid,
   date: dateString,
   startTime: timeString,
   durationMinutes: duration,
@@ -48,5 +48,5 @@ export const dateQuerySchema = z.object({
 });
 
 export const idParamSchema = z.object({
-  id: objectId
+  id: uuid
 });
