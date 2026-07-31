@@ -1,14 +1,15 @@
 import type { Booking } from "./types";
 
 export const DAY_START_HOUR = 10;
-export const DAY_END_HOUR = 20;
+export const DAY_START_MINUTES = 10 * 60;
+export const DAY_END_MINUTES = 20 * 60 + 30;
 export const SLOT_MINUTES = 15;
 export const ROW_HEIGHT = 40;
 export const DURATION_OPTIONS = [15, 30, 45, 60, 75, 90, 105, 120];
 
 export function timeSlots() {
   const slots: string[] = [];
-  for (let minutes = DAY_START_HOUR * 60; minutes < DAY_END_HOUR * 60; minutes += SLOT_MINUTES) {
+  for (let minutes = DAY_START_MINUTES; minutes <= DAY_END_MINUTES; minutes += SLOT_MINUTES) {
     slots.push(minutesToTime(minutes));
   }
   return slots;
@@ -30,7 +31,7 @@ export function endTime(startTime: string, durationMinutes: number) {
 }
 
 export function bookingTop(startTime: string) {
-  return ((timeToMinutes(startTime) - DAY_START_HOUR * 60) / SLOT_MINUTES) * ROW_HEIGHT;
+  return ((timeToMinutes(startTime) - DAY_START_MINUTES) / SLOT_MINUTES) * ROW_HEIGHT;
 }
 
 export function bookingHeight(durationMinutes: number) {

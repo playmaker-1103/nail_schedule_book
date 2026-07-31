@@ -2,8 +2,6 @@ import { MessageSquare } from "lucide-react";
 import {
   bookingHeight,
   bookingTop,
-  DAY_END_HOUR,
-  DAY_START_HOUR,
   endTime,
   layoutOverlaps,
   ROW_HEIGHT,
@@ -59,9 +57,9 @@ export function Calendar({ staff, services, bookings, search, onEmptyCellClick, 
           {slots.map((slot) => (
             <div
               key={slot}
-              className={`h-10 border-b px-2 text-right text-xs text-slate-500 ${slot.endsWith(":00") ? "border-slate-400 pt-1 font-semibold" : "border-slate-200"}`}
+              className={`h-10 border-b px-2 pt-1 text-right text-xs ${slot.endsWith(":00") ? "border-slate-400 font-semibold text-slate-600" : "border-slate-200 text-slate-400"}`}
             >
-              {slot.endsWith(":00") ? slot : ""}
+              {slot}
             </div>
           ))}
         </div>
@@ -73,7 +71,7 @@ export function Calendar({ staff, services, bookings, search, onEmptyCellClick, 
             <div
               key={member._id}
               className="calendar-hour-line relative border-r border-salon-line"
-              style={{ height: (DAY_END_HOUR - DAY_START_HOUR) * 4 * ROW_HEIGHT }}
+              style={{ height: slots.length * ROW_HEIGHT }}
             >
               <div className="grid" style={{ gridTemplateRows: `repeat(${slots.length}, ${ROW_HEIGHT}px)` }}>
                 {slots.map((slot) => (

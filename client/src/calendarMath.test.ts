@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { format } from "date-fns";
-import { bookingHeight, bookingTop, changeDateByDays, layoutOverlaps } from "./calendarMath";
+import { bookingHeight, bookingTop, changeDateByDays, layoutOverlaps, timeSlots } from "./calendarMath";
 import type { Booking } from "./types";
 
 describe("calendar math", () => {
+  it("builds 15-minute slots from 10:00 to 20:30", () => {
+    const slots = timeSlots();
+    expect(slots.slice(0, 4)).toEqual(["10:00", "10:15", "10:30", "10:45"]);
+    expect(slots.at(-1)).toBe("20:30");
+  });
+
   it("calculates visual height from duration", () => {
     expect(bookingHeight(15)).toBe(40);
     expect(bookingHeight(60)).toBe(160);
