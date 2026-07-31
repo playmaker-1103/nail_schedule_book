@@ -11,9 +11,9 @@ describe("calendar math", () => {
   });
 
   it("positions a booking from its start time", () => {
-    expect(bookingTop("07:00")).toBe(0);
-    expect(bookingTop("07:15")).toBe(40);
-    expect(bookingTop("09:00")).toBe(320);
+    expect(bookingTop("10:00")).toBe(0);
+    expect(bookingTop("10:15")).toBe(40);
+    expect(bookingTop("12:00")).toBe(320);
   });
 
   it("changes calendar dates", () => {

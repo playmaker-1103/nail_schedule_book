@@ -1,7 +1,7 @@
 import type { Booking } from "./types";
 
-export const DAY_START_HOUR = 7;
-export const DAY_END_HOUR = 21;
+export const DAY_START_HOUR = 10;
+export const DAY_END_HOUR = 20;
 export const SLOT_MINUTES = 15;
 export const ROW_HEIGHT = 40;
 export const DURATION_OPTIONS = [15, 30, 45, 60, 75, 90, 105, 120];

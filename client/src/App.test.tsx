@@ -84,7 +84,7 @@ describe("App", () => {
     renderApp();
     await screen.findByText("Tan");
 
-    await userEvent.click(screen.getByLabelText("Create booking with Tan at 09:00"));
+    await userEvent.click(screen.getByLabelText("Create booking with Tan at 10:00"));
     await userEvent.type(screen.getByLabelText("Customer name"), "Maya");
     await userEvent.click(screen.getByRole("button", { name: "Save booking" }));
 

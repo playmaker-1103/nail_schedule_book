@@ -74,7 +74,7 @@ async function seed() {
         staffId: byStaff.Tan,
         serviceId: byService["BIAB Refill"],
         date: today,
-        startTime: "09:00",
+        startTime: "10:00",
         durationMinutes: 45,
         note: "Prefers short almond"
       }),
@@ -83,7 +83,7 @@ async function seed() {
         staffId: byStaff.Lee,
         serviceId: byService["Shellac Hands"],
         date: today,
-        startTime: "09:30",
+        startTime: "10:30",
         durationMinutes: 30,
         note: ""
       }),
@@ -110,7 +110,7 @@ async function seed() {
         staffId: byStaff.Tan,
         serviceId: byService["Nail Art"],
         date: today,
-        startTime: "09:15",
+        startTime: "10:15",
         durationMinutes: 30,
         note: "Chrome finish"
       })
