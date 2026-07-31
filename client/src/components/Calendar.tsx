@@ -50,20 +50,20 @@ export function Calendar({ staff, services, bookings, search, onEmptyCellClick, 
         className="min-w-[980px] grid"
         style={{ gridTemplateColumns: `84px repeat(${staff.length}, minmax(150px, 1fr))` }}
       >
-        <div className="sticky left-0 top-0 z-30 border-b border-r border-salon-line bg-white px-3 py-3 text-sm font-semibold text-slate-600">
+        <div className="sticky left-0 top-0 z-50 border-b border-r border-salon-line bg-white px-3 py-3 text-sm font-semibold text-slate-600 shadow-[1px_0_0_#d8dfdc]">
           Time
         </div>
         {staff.map((member) => (
           <div
             key={member._id}
-            className="sticky top-0 z-20 border-b border-r border-salon-line bg-white px-3 py-3 text-center font-semibold text-salon-ink"
+            className="sticky top-0 z-40 border-b border-r border-salon-line bg-white px-3 py-3 text-center font-semibold text-salon-ink"
           >
             <span className="mr-2 inline-block h-3 w-3 rounded-full" style={{ backgroundColor: member.colour }} />
             {member.name}
           </div>
         ))}
 
-        <div className="sticky left-0 z-10 border-r border-salon-line bg-white">
+        <div className="sticky left-0 z-30 border-r border-salon-line bg-white shadow-[1px_0_0_#d8dfdc]">
           {slots.map((slot, index) => (
             <div
               key={slot}
@@ -82,7 +82,7 @@ export function Calendar({ staff, services, bookings, search, onEmptyCellClick, 
           return (
             <div
               key={member._id}
-              className="calendar-hour-line relative border-r border-salon-line"
+              className="calendar-hour-line relative z-0 border-r border-salon-line"
               style={{ height: slots.length * ROW_HEIGHT }}
             >
               <div className="grid" style={{ gridTemplateRows: `repeat(${slots.length}, ${ROW_HEIGHT}px)` }}>
@@ -110,7 +110,7 @@ export function Calendar({ staff, services, bookings, search, onEmptyCellClick, 
                     key={booking._id}
                     type="button"
                     onClick={() => onBookingClick(booking)}
-                    className="absolute z-10 overflow-hidden rounded-md border border-black/10 px-2 py-1 text-left shadow-sm ring-1 ring-white/60 hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-teal-800"
+                    className="absolute z-[1] overflow-hidden rounded-md border border-black/10 px-2 py-1 text-left shadow-sm ring-1 ring-white/60 hover:z-[2] hover:brightness-95 focus:z-[3] focus:outline-none focus:ring-2 focus:ring-teal-800"
                     style={{
                       top: bookingTop(booking.startTime) + 2,
                       height: Math.max(bookingHeight(booking.durationMinutes) - 4, 30),
