@@ -1,8 +1,8 @@
 import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DURATION_OPTIONS } from "../calendarMath";
 import { useSettingsMutations } from "../hooks";
-import type { Service, Staff } from "../types";
+import type { Service, ServicePayload, Staff, StaffPayload } from "../types";
 
 type Props = {
   staff: Staff[];
@@ -13,11 +13,66 @@ type Props = {
 const staffColours = ["#0f766e", "#2563eb", "#7c3aed", "#be123c", "#a16207", "#047857", "#0891b2", "#c2410c"];
 const serviceColours = ["#d9f99d", "#bbf7d0", "#bfdbfe", "#c7d2fe", "#fecdd3", "#fed7aa", "#ccfbf1", "#fef08a", "#e5e7eb", "#fbcfe8"];
 
+type StaffDraft = Pick<Staff, "_id" | "name" | "colour" | "active">;
+type ServiceDraft = Pick<Service, "_id" | "name" | "colour" | "defaultDuration" | "active">;
+
 export function SettingsDrawer({ staff, services, onClose }: Props) {
   const mutations = useSettingsMutations();
   const [staffName, setStaffName] = useState("");
   const [serviceName, setServiceName] = useState("");
   const [serviceDuration, setServiceDuration] = useState(30);
+  const [staffDrafts, setStaffDrafts] = useState<Record<string, StaffDraft>>({});
+  const [serviceDrafts, setServiceDrafts] = useState<Record<string, ServiceDraft>>({});
+
+  useEffect(() => {
+    setStaffDrafts(Object.fromEntries(staff.map((member) => [member._id, pickStaffDraft(member)])));
+  }, [staff]);
+
+  useEffect(() => {
+    setServiceDrafts(Object.fromEntries(services.map((service) => [service._id, pickServiceDraft(service)])));
+  }, [services]);
+
+  function pickStaffDraft(member: Staff): StaffDraft {
+    return { _id: member._id, name: member.name, colour: member.colour, active: member.active };
+  }
+
+  function pickServiceDraft(service: Service): ServiceDraft {
+    return {
+      _id: service._id,
+      name: service.name,
+      colour: service.colour,
+      defaultDuration: service.defaultDuration,
+      active: service.active
+    };
+  }
+
+  function setStaffDraft(id: string, patch: Partial<StaffDraft>) {
+    setStaffDrafts((drafts) => ({ ...drafts, [id]: { ...drafts[id], ...patch } as StaffDraft }));
+  }
+
+  function setServiceDraft(id: string, patch: Partial<ServiceDraft>) {
+    setServiceDrafts((drafts) => ({ ...drafts, [id]: { ...drafts[id], ...patch } as ServiceDraft }));
+  }
+
+  function saveStaff(member: Staff, payload: Partial<StaffPayload>) {
+    const cleanPayload = "name" in payload && typeof payload.name === "string" ? { ...payload, name: payload.name.trim() } : payload;
+    if ("name" in cleanPayload && !cleanPayload.name) {
+      setStaffDraft(member._id, { name: member.name });
+      return;
+    }
+    const hasChanges = Object.entries(cleanPayload).some(([key, value]) => member[key as keyof Staff] !== value);
+    if (hasChanges) mutations.updateStaff.mutate({ id: member._id, payload: cleanPayload });
+  }
+
+  function saveService(service: Service, payload: Partial<ServicePayload>) {
+    const cleanPayload = "name" in payload && typeof payload.name === "string" ? { ...payload, name: payload.name.trim() } : payload;
+    if ("name" in cleanPayload && !cleanPayload.name) {
+      setServiceDraft(service._id, { name: service.name });
+      return;
+    }
+    const hasChanges = Object.entries(cleanPayload).some(([key, value]) => service[key as keyof Service] !== value);
+    if (hasChanges) mutations.updateService.mutate({ id: service._id, payload: cleanPayload });
+  }
 
   function moveStaff(member: Staff, direction: -1 | 1) {
     const sorted = [...staff].sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
@@ -79,23 +134,28 @@ export function SettingsDrawer({ staff, services, onClose }: Props) {
               <div key={member._id} className="grid grid-cols-[1fr_auto] gap-3 p-3">
                 <div className="grid gap-2 sm:grid-cols-[1fr_92px_92px]">
                   <input
-                    value={member.name}
-                    onChange={(event) => mutations.updateStaff.mutate({ id: member._id, payload: { name: event.target.value } })}
+                    value={staffDrafts[member._id]?.name ?? member.name}
+                    onChange={(event) => setStaffDraft(member._id, { name: event.target.value })}
+                    onBlur={() => saveStaff(member, { name: staffDrafts[member._id]?.name ?? member.name })}
                     className="h-10 rounded-md border border-slate-300 px-2"
                     aria-label={`Rename ${member.name}`}
                   />
                   <input
                     type="color"
-                    value={member.colour}
-                    onChange={(event) => mutations.updateStaff.mutate({ id: member._id, payload: { colour: event.target.value } })}
+                    value={staffDrafts[member._id]?.colour ?? member.colour}
+                    onChange={(event) => setStaffDraft(member._id, { colour: event.target.value })}
+                    onBlur={() => saveStaff(member, { colour: staffDrafts[member._id]?.colour ?? member.colour })}
                     className="h-10 w-full rounded-md border border-slate-300 p-1"
                     aria-label={`${member.name} colour`}
                   />
                   <label className="flex h-10 items-center gap-2 rounded-md border border-slate-300 px-2 text-sm">
                     <input
                       type="checkbox"
-                      checked={member.active}
-                      onChange={(event) => mutations.updateStaff.mutate({ id: member._id, payload: { active: event.target.checked } })}
+                      checked={staffDrafts[member._id]?.active ?? member.active}
+                      onChange={(event) => {
+                        setStaffDraft(member._id, { active: event.target.checked });
+                        saveStaff(member, { active: event.target.checked });
+                      }}
                     />
                     Active
                   </label>
@@ -158,14 +218,19 @@ export function SettingsDrawer({ staff, services, onClose }: Props) {
               <div key={service._id} className="grid grid-cols-[1fr_auto] gap-3 p-3">
                 <div className="grid gap-2 sm:grid-cols-[1fr_110px_84px_92px]">
                   <input
-                    value={service.name}
-                    onChange={(event) => mutations.updateService.mutate({ id: service._id, payload: { name: event.target.value } })}
+                    value={serviceDrafts[service._id]?.name ?? service.name}
+                    onChange={(event) => setServiceDraft(service._id, { name: event.target.value })}
+                    onBlur={() => saveService(service, { name: serviceDrafts[service._id]?.name ?? service.name })}
                     className="h-10 rounded-md border border-slate-300 px-2"
                     aria-label={`Rename ${service.name}`}
                   />
                   <select
-                    value={service.defaultDuration}
-                    onChange={(event) => mutations.updateService.mutate({ id: service._id, payload: { defaultDuration: Number(event.target.value) } })}
+                    value={serviceDrafts[service._id]?.defaultDuration ?? service.defaultDuration}
+                    onChange={(event) => {
+                      const defaultDuration = Number(event.target.value);
+                      setServiceDraft(service._id, { defaultDuration });
+                      saveService(service, { defaultDuration });
+                    }}
                     className="h-10 rounded-md border border-slate-300 bg-white px-2"
                     aria-label={`${service.name} duration`}
                   >
@@ -177,16 +242,20 @@ export function SettingsDrawer({ staff, services, onClose }: Props) {
                   </select>
                   <input
                     type="color"
-                    value={service.colour}
-                    onChange={(event) => mutations.updateService.mutate({ id: service._id, payload: { colour: event.target.value } })}
+                    value={serviceDrafts[service._id]?.colour ?? service.colour}
+                    onChange={(event) => setServiceDraft(service._id, { colour: event.target.value })}
+                    onBlur={() => saveService(service, { colour: serviceDrafts[service._id]?.colour ?? service.colour })}
                     className="h-10 w-full rounded-md border border-slate-300 p-1"
                     aria-label={`${service.name} colour`}
                   />
                   <label className="flex h-10 items-center gap-2 rounded-md border border-slate-300 px-2 text-sm">
                     <input
                       type="checkbox"
-                      checked={service.active}
-                      onChange={(event) => mutations.updateService.mutate({ id: service._id, payload: { active: event.target.checked } })}
+                      checked={serviceDrafts[service._id]?.active ?? service.active}
+                      onChange={(event) => {
+                        setServiceDraft(service._id, { active: event.target.checked });
+                        saveService(service, { active: event.target.checked });
+                      }}
                     />
                     Active
                   </label>
