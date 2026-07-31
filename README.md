@@ -53,6 +53,21 @@ npm run lint
 npm test
 ```
 
+## Deploy To Vercel
+
+Use a MongoDB Atlas or other cloud MongoDB URI for production. A local MongoDB URI such as `mongodb://127.0.0.1:27017/...` will not be reachable from Vercel.
+
+Required Vercel environment variable:
+
+- `MONGODB_URI`
+
+Deploy:
+
+```bash
+vercel
+vercel --prod
+```
+
 Start the built server:
 
 ```bash
