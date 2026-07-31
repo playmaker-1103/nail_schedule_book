@@ -44,6 +44,19 @@ beforeEach(() => {
       bookings.push(created);
       return json(created, 201);
     }
+    if (url.includes("/bookings/") && init?.method === "PATCH") {
+      const id = url.split("/bookings/")[1];
+      const index = bookings.findIndex((booking) => booking._id === id);
+      if (index === -1) return json({ message: "Not found" }, 404);
+      bookings[index] = { ...bookings[index], ...JSON.parse(String(init.body)) };
+      return json(bookings[index]);
+    }
+    if (url.includes("/bookings/") && init?.method === "DELETE") {
+      const id = url.split("/bookings/")[1];
+      const index = bookings.findIndex((booking) => booking._id === id);
+      if (index >= 0) bookings.splice(index, 1);
+      return new Response(null, { status: 204 });
+    }
     if (url.includes("/bookings")) return json(bookings);
     return json({ ok: true });
   }));
@@ -77,6 +90,36 @@ describe("App", () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/bookings"), expect.objectContaining({ method: "POST" })));
     expect(await screen.findByText("Maya")).toBeInTheDocument();
+  });
+
+  it("edits and deletes an existing booking from the appointment popup", async () => {
+    bookings.push({
+      _id: "44444444-4444-4444-8444-444444444444",
+      customerName: "Existing Client",
+      staffId: staff[0]._id,
+      serviceId: services[0]._id,
+      date: "2026-07-31",
+      startTime: "10:00",
+      durationMinutes: 45,
+      note: "",
+      createdAt: "",
+      updatedAt: ""
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    renderApp();
+    await userEvent.click(await screen.findByRole("button", { name: /Existing Client/i }));
+
+    expect(screen.getByText("Change schedule")).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText("Start time"), "11:15");
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /11:15-12:00/i })).toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole("button", { name: /Existing Client/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete booking" }));
+
+    await waitFor(() => expect(screen.queryByText("Existing Client")).not.toBeInTheDocument());
   });
 });
 

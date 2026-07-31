@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { DURATION_OPTIONS, endTime } from "../calendarMath";
+import { DURATION_OPTIONS, endTime, timeSlots } from "../calendarMath";
 import type { Booking, BookingPayload, Service, Staff } from "../types";
 import { ModalShell } from "./ModalShell";
 
@@ -70,6 +70,7 @@ export function BookingModal({
   const selectedStaff = staff.find((member) => member._id === draft.staffId);
   const selectedService = services.find((service) => service._id === draft.serviceId);
   const canSave = draft.customerName.trim() && draft.serviceId && draft.staffId && draft.date && draft.startTime && !isSaving;
+  const slots = useMemo(() => timeSlots(), []);
 
   function setField<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -132,43 +133,45 @@ export function BookingModal({
           </select>
         </label>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Duration</span>
-            <select
-              value={draft.durationMinutes}
-              onChange={(event) => setField("durationMinutes", Number(event.target.value))}
-              className="h-12 w-full rounded-md border border-slate-300 bg-white px-3 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
-              required
-            >
-              {DURATION_OPTIONS.map((duration) => (
-                <option key={duration} value={duration}>
-                  {duration} minutes
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {mode === "edit" ? (
-            <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">Employee</span>
-              <select
-                value={draft.staffId}
-                onChange={(event) => setField("staffId", event.target.value)}
-                className="h-12 w-full rounded-md border border-slate-300 bg-white px-3 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
-              >
-                {staff.map((member) => (
-                  <option key={member._id} value={member._id}>
-                    {member.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-        </div>
+        <label className="block space-y-1">
+          <span className="text-sm font-medium text-slate-700">Duration</span>
+          <select
+            value={draft.durationMinutes}
+            onChange={(event) => setField("durationMinutes", Number(event.target.value))}
+            className="h-12 w-full rounded-md border border-slate-300 bg-white px-3 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+            required
+          >
+            {DURATION_OPTIONS.map((duration) => (
+              <option key={duration} value={duration}>
+                {duration} minutes
+              </option>
+            ))}
+          </select>
+        </label>
 
         {mode === "edit" ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <section className="space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+            <div>
+              <h3 className="text-sm font-semibold text-salon-ink">Change schedule</h3>
+              <p className="text-xs text-slate-600">Move this booking to another staff member, day, or start time.</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-slate-700">Employee</span>
+                <select
+                  value={draft.staffId}
+                  onChange={(event) => setField("staffId", event.target.value)}
+                  className="h-12 w-full rounded-md border border-slate-300 bg-white px-3 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+                >
+                  {staff.map((member) => (
+                    <option key={member._id} value={member._id}>
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
             <label className="block space-y-1">
               <span className="text-sm font-medium text-slate-700">Date</span>
               <input
@@ -180,15 +183,20 @@ export function BookingModal({
             </label>
             <label className="block space-y-1">
               <span className="text-sm font-medium text-slate-700">Start time</span>
-              <input
-                type="time"
-                step="900"
+              <select
                 value={draft.startTime}
                 onChange={(event) => setField("startTime", event.target.value)}
-                className="h-12 w-full rounded-md border border-slate-300 px-3 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
-              />
+                className="h-12 w-full rounded-md border border-slate-300 bg-white px-3 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+              >
+                {slots.map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
+          </section>
         ) : null}
 
         <label className="block space-y-1">
